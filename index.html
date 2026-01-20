@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声議事録アプリ</title>
+    <style>
+        /* 基本スタイル設定 */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto; /* 中央に配置 */
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #0078d4;
+            color: white;
+        }
+        button:hover {
+            background-color: #005a9e;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .stop { background-color: #d13438; }
+        .stop:hover { background-color: #a4373a; }
+        .clear { background-color: #8764b8; }
+        .clear:hover { background-color: #5e4fa2; }
+        #status {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e7f3ff;
+            border-left: 4px solid #0078d4;
+            border-radius: 4px;
+        }
+        #transcript {
+            width: 100%;
+            height: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 音声議事録アプリ</h1>
+        
+        <div id="status">準備完了</div>
+        
+        <div class="controls">
+            <button id="startBtn">開始</button> <!-- 音声認識を開始するボタン -->
+            <button id="stopBtn" class="stop" disabled>停止</button> <!-- 音声認識を停止するボタン -->
+            <button id="clearBtn" class="clear">クリア</button> <!-- テキストエリアをクリアするボタン -->
+            <select id="language"> <!-- 言語選択ドロップダウン -->
+                <option value="ja-JP">日本語</option>
+                <option value="en-US">英語</option>
+            </select>
+        </div>
+        
+        <textarea id="transcript" placeholder="音声が認識されここに表示されます..."></textarea> <!-- 認識された音声を表示するテキストエリア -->
+    </div>
+
+    <script>
+        // 音声認識オブジェクトの作成
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const status = document.getElementById('status');
+        const transcript = document.getElementById('transcript');
+        const languageSelect = document.getElementById('language');
+        let isListening = false; // リスニング状態を管理するフラグ
+
+        recognition.continuous = true; // 継続的な音声認識を有効にする
+        recognition.interimResults = true; // 中間結果を取得する
+
+        // 開始ボタンのクリックイベント
+        startBtn.addEventListener('click', () => {
+            isListening = true; // リスニング状態をtrueに設定
+            recognition.lang = languageSelect.value; // 選択された言語を設定
+            recognition.start(); // 音声認識を開始
+            startBtn.disabled = true; // 開始ボタンを無効化
+            stopBtn.disabled = false; // 停止ボタンを有効化
+            status.textContent = '🎤 リッスン中...'; // ステータスを更新
+        });
+
+        // 停止ボタンのクリックイベント
+        stopBtn.addEventListener('click', () => {
+            isListening = false; // リスニング状態をfalseに設定
+            recognition.stop(); // 音声認識を停止
+            startBtn.disabled = false; // 開始ボタンを有効化
+            stopBtn.disabled = true; // 停止ボタンを無効化
+            status.textContent = '停止しました'; // ステータスを更新
+        });
+
+        // クリアボタンのクリックイベント
+        clearBtn.addEventListener('click', () => {
+            transcript.value = ''; // テキストエリアをクリア
+            status.textContent = 'クリアしました'; // ステータスを更新
+        });
+
+        // 音声認識結果の処理
+        recognition.onresult = (event) => {
+            let interimTranscript = ''; // 中間結果を格納する変数
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcriptSegment = event.results[i][0].transcript; // 認識されたテキスト
+                if (event.results[i].isFinal) {
+                    transcript.value += transcriptSegment + '\n'; // 最終結果をテキストエリアに追加
+                } else {
+                    interimTranscript += transcriptSegment; // 中間結果を追加
+                }
+            }
+            if (interimTranscript) {
+                status.textContent = '認識中: ' + interimTranscript; // ステータスを更新
+            }
+        };
+
+        // エラー処理
+        recognition.onerror = (event) => {
+            status.textContent = 'エラー: ' + event.error; // エラーメッセージを表示
+            // リスニング中の場合は自動的に再開
+            if (isListening) {
+                setTimeout(() => {
+                    recognition.start();
+                }, 100);
+            }
+        };
+
+        // 音声認識が終了したときの処理
+        recognition.onend = () => {
+            // リスニング中の場合は自動的に再開
+            if (isListening) {
+                recognition.start();
+            } else {
+                startBtn.disabled = false; // 開始ボタンを有効化
+                stopBtn.disabled = true; // 停止ボタンを無効化
+                status.textContent = '準備完了'; // ステータスを更新
+            }
+        };
+    </script>
+</body>
+</html>
