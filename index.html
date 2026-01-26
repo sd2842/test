@@ -4,69 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>音声議事録アプリ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* 基本スタイル設定 */
+        /* モダンなスタイル設定 */
         body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 0 auto; /* 中央に配置 */
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
         }
         .container {
             background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            margin: 20px;
         }
         h1 {
-            color: #333;
+            color: #4a5568;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 2.5rem;
+        }
+        .status {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 500;
+            color: #1976d2;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
             flex-wrap: wrap;
+            justify-content: center;
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
+            font-weight: 500;
             border: none;
-            border-radius: 4px;
+            border-radius: 50px;
             cursor: pointer;
-            background-color: #0078d4;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        #startBtn {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
             color: white;
         }
-        button:hover {
-            background-color: #005a9e;
+        #startBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+        #stopBtn {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+        #stopBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+        #clearBtn {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+            color: white;
+        }
+        #clearBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
         }
         button:disabled {
-            background-color: #ccc;
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        .stop { background-color: #d13438; }
-        .stop:hover { background-color: #a4373a; }
-        .clear { background-color: #8764b8; }
-        .clear:hover { background-color: #5e4fa2; }
-        #status {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #e7f3ff;
-            border-left: 4px solid #0078d4;
-            border-radius: 4px;
+        select {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 50px;
+            background: #f8f9fa;
+            color: #495057;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        select:focus {
+            outline: none;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
         }
         #transcript {
             width: 100%;
             height: 300px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            font-size: 16px;
             line-height: 1.6;
             resize: vertical;
+            background: #f8f9fa;
+            color: #495057;
+            font-family: 'Noto Sans JP', sans-serif;
+            transition: border-color 0.3s ease;
+        }
+        #transcript:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
         }
         .timestamp {
-            color: #666;
+            color: #6c757d;
             font-size: 12px;
         }
     </style>
@@ -75,12 +135,12 @@
     <div class="container">
         <h1>🎤 音声議事録アプリ</h1>
         
-        <div id="status">準備完了</div>
+        <div class="status" id="status">準備完了</div>
         
         <div class="controls">
             <button id="startBtn">開始</button> <!-- 音声認識を開始するボタン -->
-            <button id="stopBtn" class="stop" disabled>停止</button> <!-- 音声認識を停止するボタン -->
-            <button id="clearBtn" class="clear">クリア</button> <!-- テキストエリアをクリアするボタン -->
+            <button id="stopBtn" disabled>停止</button> <!-- 音声認識を停止するボタン -->
+            <button id="clearBtn">クリア</button> <!-- テキストエリアをクリアするボタン -->
             <select id="language"> <!-- 言語選択ドロップダウン -->
                 <option value="ja-JP">日本語</option>
                 <option value="en-US">英語</option>
