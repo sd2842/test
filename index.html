@@ -85,6 +85,14 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
         }
+        #saveBtn {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            color: white;
+        }
+        #saveBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+        }
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -141,6 +149,7 @@
             <button id="startBtn">開始</button> <!-- 音声認識を開始するボタン -->
             <button id="stopBtn" disabled>停止</button> <!-- 音声認識を停止するボタン -->
             <button id="clearBtn">クリア</button> <!-- テキストエリアをクリアするボタン -->
+            <button id="saveBtn" disabled>保存</button> <!-- テキストを保存するボタン -->
             <select id="language"> <!-- 言語選択ドロップダウン -->
                 <option value="ja-JP">日本語</option>
                 <option value="en-US">英語</option>
@@ -156,6 +165,7 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
         const status = document.getElementById('status');
         const transcript = document.getElementById('transcript');
         const languageSelect = document.getElementById('language');
@@ -186,6 +196,7 @@
         // クリアボタンのクリックイベント
         clearBtn.addEventListener('click', () => {
             transcript.value = ''; // テキストエリアをクリア
+            saveBtn.disabled = true;
             status.textContent = 'クリアしました'; // ステータスを更新
         });
 
@@ -227,6 +238,41 @@
                 status.textContent = '準備完了'; // ステータスを更新
             }
         };
+
+        // 保存ボタンの有効化（テキストがあるとき）
+        transcript.addEventListener('input', () => {
+            saveBtn.disabled = transcript.value.trim() === '';
+        });
+
+        // 保存ボタンのクリックイベント（テキストをファイルとしてダウンロード）
+        saveBtn.addEventListener('click', () => {
+            const text = transcript.value.trim();
+            if (!text) return;
+            const now = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const filename = `minutes_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.txt`;
+            const header = `議事録 （保存日時: ${now.toLocaleString()}）\n言語: ${languageSelect.value}\n\n`;
+            const blob = new Blob([header, text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            status.textContent = `保存しました: ${filename}`;
+        });
+
+        // Ctrl/Cmd+Sで保存
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                if (!saveBtn.disabled) {
+                    e.preventDefault();
+                    saveBtn.click();
+                }
+            }
+        });
     </script>
 </body>
 </html>
